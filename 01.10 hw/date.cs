@@ -10,43 +10,94 @@ namespace hw
 
         public Date(int day, int month, int year)
         {
-            if (correct_date(day, month, year))
+            try
             {
+                if (!correct_date(day, month, year))
+                {
+                    throw new ArgumentOutOfRangeException("Incorrect date");
+                }
+
                 this.day = day;
                 this.month = month;
                 this.year = year;
             }
+            catch (ArgumentOutOfRangeException ex) when (day < 1 || day > days_in_month(month, year))
+            {
+                Console.WriteLine($"Error: {ex.Message} incorrect value of date ");
+                throw;
+            }
+            catch (ArgumentOutOfRangeException ex) when (month < 1 || month > 12)
+            {
+                Console.WriteLine($"Error: {ex.Message} incorrect value of month");
+                throw;
+            }
         }
-        public Date() : this(1, 1, 2000) { }
 
+        public Date() : this(1, 1, 2000) { }
         public void set_day(int day)
         {
-            if (day >= 1 && day <= days_in_month(month, year))
+            try
+            {
+                if (day < 1 || day > days_in_month(month, year))
+                {
+                    throw new ArgumentOutOfRangeException("Incorrect day");
+                }
                 this.day = day;
+            }
+            catch (ArgumentOutOfRangeException ex) when (day < 1 || day > days_in_month(month, year))
+            {
+                Console.WriteLine($"Eror: {ex.Message} incorrect value of date");
+                throw;
+            }
         }
 
-        public void set_month(int month)
-        {
-            if (month >= 1 && month <= 12)
-                this.month = month;
-        }
-        public void set_year(int year)
-        {
-            this.year = year;
-        }
         public int get_day()
         {
             return day;
         }
+        public void set_month(int month)
+        {
+            try
+            {
+                if (month < 1 || month > 12)
+                {
+                    throw new ArgumentOutOfRangeException("Incorrect month");
+                }
+                this.month = month;
+            }
+            catch (ArgumentOutOfRangeException ex) when (month < 1 || month > 12)
+            {
+                Console.WriteLine($"Error: {ex.Message} incorrect value of month");
+                throw;
+            }
+        }
+
         public int get_month()
         {
             return month;
+        }
+        public void set_year(int year)
+        {
+            try
+            {
+                if (year < 1)
+                {
+                    throw new ArgumentOutOfRangeException("Incorrect year");
+                }
+                this.year = year;
+            }
+            catch (ArgumentOutOfRangeException ex) when (year < 1)
+            {
+                Console.WriteLine($"Error: {ex.Message}incorrect value of year");
+                throw;
+            }
         }
 
         public int get_year()
         {
             return year;
         }
+
         private bool correct_date(int day, int month, int year)
         {
             return day >= 1 && day <= days_in_month(month, year) && month >= 1 && month <= 12;
@@ -56,7 +107,9 @@ namespace hw
         {
             int[] all_days = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
             if (month == 2 && leap_year(year))
+            {
                 return 29;
+            }
             return all_days[month - 1];
         }
 
@@ -65,54 +118,68 @@ namespace hw
             return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
         }
 
-        public int between_days(Date date)
+        public void print()
         {
-            int difference = refill_into() - date.refill_into();
-            if (difference < 0)
+            Console.WriteLine($"{day:D2}.{month:D2}.{year}");
+        }
+
+        public void add(int days)
+        {
+            try
             {
-                return -difference;
+                if (days < 0)
+                {
+                    throw new ArgumentOutOfRangeException( "value of days cannot be negative");
+                }
+
+                // контролирую переполнение при добавлении
+                int total;
+                try
+                {
+                    total = checked(refill_into() + days);
+                }
+                catch (OverflowException)
+                {
+                    Console.WriteLine("Error with refilling ");
+                    throw;
+                }
+
+                year = 1;
+                while (total > (leap_year(year) ? 366 : 365))
+                {
+                    total -= leap_year(year) ? 366 : 365;
+                    year++;
+                }
+                month = 1;
+                while (total > days_in_month(month, year))
+                {
+                    total -= days_in_month(month, year);
+                    month++;
+                }
+                day = total;
             }
-            else
+            catch (ArgumentOutOfRangeException ex) when (days < 0)
             {
-                return difference;
+                Console.WriteLine($" {ex.Message} incorrect value of amount of days");
+                throw;
             }
         }
 
         private int refill_into()
         {
-            int total = day;
-            for (int y = 1; y < year; y++)
+            unchecked
             {
-                total += leap_year(y) ? 366 : 365;
+                int total = day;
+                for (int y = 1; y < year; y++)
+                {
+                    total += leap_year(y) ? 366 : 365;
+                }
+                for (int m = 1; m < month; m++)
+                {
+                    total += days_in_month(m, year);
+                }
+                return total;
             }
-            for (int m = 1; m < month; m++)
-            {
-                total += days_in_month(m, year);
-            }
-            return total;
-        }
-
-        public void add(int days)
-        {
-            int total = refill_into() + days;
-            year = 1;
-            while (total > (leap_year(year) ? 366 : 365))
-            {
-                total -= leap_year(year) ? 366 : 365;
-                year++;
-            }
-            month = 1;
-            while (total > days_in_month(month, year))
-            {
-                total -= days_in_month(month, year);
-                month++;
-            }
-            day = total;
-        }
-
-        public void print()
-        {
-            Console.WriteLine($"{day:D2}.{month:D2}.{year}");
         }
 
         // Overloaded binary operator '-'
